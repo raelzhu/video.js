@@ -11,18 +11,19 @@ import Player from './player';
 import plugin from './plugins.js';
 import mergeOptions from '../../src/js/utils/merge-options.js';
 import * as Fn from './utils/fn.js';
+import TextTrack from './tracks/text-track.js';
 
 import assign from 'object.assign';
-import { createTimeRange } from './utils/time-ranges.js';
+import { createTimeRanges } from './utils/time-ranges.js';
 import formatTime from './utils/format-time.js';
 import log from './utils/log.js';
-import xhr from './xhr.js';
 import * as Dom from './utils/dom.js';
 import * as browser from './utils/browser.js';
 import * as Url from './utils/url.js';
-import extendsFn from './extends.js';
+import extendFn from './extend.js';
 import merge from 'lodash-compat/object/merge';
 import createDeprecationProxy from './utils/create-deprecation-proxy.js';
+import xhr from 'xhr';
 
 // Include the built-in techs
 import Html5 from './tech/html5.js';
@@ -97,14 +98,17 @@ var videojs = function(id, options, ready){
 };
 
 // Add default styles
-let style = stylesheet.createStyleElement('vjs-styles-defaults');
-let head = document.querySelector('head');
-head.insertBefore(style, head.firstChild);
-stylesheet.setTextContent(style, `
-  .video-js {
-    width: 300px;
-    height: 150px;
-`);
+let style = document.querySelector('.vjs-styles-defaults');
+if (!style) {
+  style = stylesheet.createStyleElement('vjs-styles-defaults');
+  let head = document.querySelector('head');
+  head.insertBefore(style, head.firstChild);
+  stylesheet.setTextContent(style, `
+    .video-js {
+      width: 300px;
+      height: 150px;
+  `);
+}
 
 // Run Auto-load players
 // You have to wait at least once in case this script is loaded after your video in the DOM (weird behavior only with minified version)
@@ -177,8 +181,8 @@ videojs.getComponent = Component.getComponent;
  * ```js
  *     // Get a component to subclass
  *     var VjsButton = videojs.getComponent('Button');
- *     // Subclass the component (see 'extends' doc for more info)
- *     var MySpecialButton = videojs.extends(VjsButton, {});
+ *     // Subclass the component (see 'extend' doc for more info)
+ *     var MySpecialButton = videojs.extend(VjsButton, {});
  *     // Register the new component
  *     VjsButton.registerComponent('MySepcialButton', MySepcialButton);
  *     // (optionally) add the new component as a default player child
@@ -215,7 +219,7 @@ videojs.TOUCH_ENABLED = browser.TOUCH_ENABLED;
 
 /**
  * Subclass an existing class
- * Mimics ES6 subclassing with the `extends` keyword
+ * Mimics ES6 subclassing with the `extend` keyword
  * ```js
  *     // Create a basic javascript 'class'
  *     function MyClass(name){
@@ -228,7 +232,7 @@ videojs.TOUCH_ENABLED = browser.TOUCH_ENABLED;
  *     };
  *     // Subclass the exisitng class and change the name
  *     // when initializing
- *     var MySubClass = videojs.extends(MyClass, {
+ *     var MySubClass = videojs.extend(MyClass, {
  *       constructor: function(name) {
  *         // Call the super class constructor for the subclass
  *         MyClass.call(this, name)
@@ -244,9 +248,9 @@ videojs.TOUCH_ENABLED = browser.TOUCH_ENABLED;
  *                   Optionally including a `constructor` function
  * @return {Function} The newly created subclass
  * @mixes videojs
- * @method extends
+ * @method extend
  */
-videojs.extends = extendsFn;
+videojs.extend = extendFn;
 
 /**
  * Merge two options objects recursively
@@ -374,12 +378,12 @@ videojs.log = log;
 /**
  * Creates an emulated TimeRange object.
  *
- * @param  {Number} start Start time in seconds
+ * @param  {Number|Array} start Start time in seconds or an array of ranges
  * @param  {Number} end   End time in seconds
  * @return {Object}       Fake TimeRange object
  * @method createTimeRange
  */
-videojs.createTimeRange = createTimeRange;
+videojs.createTimeRange = videojs.createTimeRanges = createTimeRanges;
 
 /**
  * Format seconds as a time string, H:MM:SS or M:SS
@@ -392,37 +396,6 @@ videojs.createTimeRange = createTimeRange;
  * @method formatTime
  */
 videojs.formatTime = formatTime;
-
-/**
- * Simple http request for retrieving external files (e.g. text tracks)
- *
- * ##### Example
- *
- *     // using url string
- *     videojs.xhr('http://example.com/myfile.vtt', function(error, response, responseBody){});
- *
- *     // or options block
- *     videojs.xhr({
- *       uri: 'http://example.com/myfile.vtt',
- *       method: 'GET',
- *       responseType: 'text'
- *     }, function(error, response, responseBody){
- *       if (error) {
- *         // log the error
- *       } else {
- *         // successful, do something with the response
- *       }
- *     });
- *
- *
- * API is modeled after the Raynos/xhr.
- * https://github.com/Raynos/xhr/blob/master/index.js
- *
- * @param  {Object|String}  options   Options block or URL string
- * @param  {Function}       callback  The callback function
- * @returns {Object}                  The request
- */
-videojs.xhr = xhr;
 
 /**
  * Resolve and parse the elements of a URL
@@ -483,6 +456,36 @@ videojs.off = Events.off;
  * @method trigger
  */
 videojs.trigger = Events.trigger;
+
+/**
+ * A cross-browser XMLHttpRequest wrapper. Here's a simple example:
+ *
+ *     videojs.xhr({
+ *       body: someJSONString,
+ *       uri: "/foo",
+ *       headers: {
+ *         "Content-Type": "application/json"
+ *       }
+ *     }, function (err, resp, body) {
+ *       // check resp.statusCode
+ *     });
+ *
+ * Check out the [full
+ * documentation](https://github.com/Raynos/xhr/blob/v2.1.0/README.md)
+ * for more options.
+ *
+ * @param {Object} options settings for the request.
+ * @return {XMLHttpRequest|XDomainRequest} the request object.
+ * @see https://github.com/Raynos/xhr
+ */
+videojs.xhr = xhr;
+
+/**
+ * TextTrack class
+ *
+ * @type {Function}
+ */
+videojs.TextTrack = TextTrack;
 
 // REMOVING: We probably should add this to the migration plugin
 // // Expose but deprecate the window[componentName] method for accessing components

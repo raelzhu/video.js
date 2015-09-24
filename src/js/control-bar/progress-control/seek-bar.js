@@ -7,6 +7,7 @@ import LoadProgressBar from './load-progress-bar.js';
 import PlayProgressBar from './play-progress-bar.js';
 import * as Fn from '../../utils/fn.js';
 import formatTime from '../../utils/format-time.js';
+import assign from 'object.assign';
 
 /**
  * Seek Bar and holder for the progress bars
@@ -32,7 +33,8 @@ class SeekBar extends Slider {
    */
   createEl() {
     return super.createEl('div', {
-      className: 'vjs-progress-holder',
+      className: 'vjs-progress-holder'
+    }, {
       'aria-label': 'video progress bar'
     });
   }
@@ -126,6 +128,7 @@ class SeekBar extends Slider {
 SeekBar.prototype.options_ = {
   children: {
     'loadProgressBar': {},
+    'mouseTimeDisplay': {},
     'playProgressBar': {}
   },
   'barName': 'playProgressBar'
